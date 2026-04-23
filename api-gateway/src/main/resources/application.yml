@@ -21,11 +21,17 @@ spring:
           predicates:
             - Path=/auth/**
 
-        # ✅ Expense Service (NEW)
+        # ✅ Expense Service
         - id: expense-service
           uri: lb://EXPENSE-SERVICE
           predicates:
             - Path=/expenses/**
+
+        # ✅ Income Service (NEW)
+        - id: income-service
+          uri: lb://INCOME-SERVICE
+          predicates:
+            - Path=/income/**
 
 eureka:
   client:
