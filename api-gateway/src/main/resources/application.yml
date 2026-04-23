@@ -9,19 +9,29 @@ spring:
     gateway:
       routes:
 
-        # ✅ Test route (keep it)
+        # ✅ Test route
         - id: test-route
           uri: http://httpbin.org
           predicates:
             - Path=/test
 
-        # ✅ Auth Service route (NEW)
+        # ✅ Auth Service
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
             - Path=/auth/**
 
+        # ✅ Expense Service (NEW)
+        - id: expense-service
+          uri: lb://EXPENSE-SERVICE
+          predicates:
+            - Path=/expenses/**
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
+
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
