@@ -8,10 +8,18 @@ spring:
   cloud:
     gateway:
       routes:
+
+        # ✅ Test route (keep it)
         - id: test-route
           uri: http://httpbin.org
           predicates:
             - Path=/test
+
+        # ✅ Auth Service route (NEW)
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/auth/**
 
 eureka:
   client:
