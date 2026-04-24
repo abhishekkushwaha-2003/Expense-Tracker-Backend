@@ -33,11 +33,17 @@ spring:
           predicates:
             - Path=/income/**
 
-        # ✅ Category Service (NEW)
+        # ✅ Category Service
         - id: category-service
           uri: lb://CATEGORY-SERVICE
           predicates:
             - Path=/categories/**
+
+        # ✅ Budget Service (NEW)
+        - id: budget-service
+          uri: lb://BUDGET-SERVICE
+          predicates:
+            - Path=/budgets/**
 
 eureka:
   client:
