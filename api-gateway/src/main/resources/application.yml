@@ -45,11 +45,17 @@ spring:
           predicates:
             - Path=/budgets/**
 
-        # ✅ Analytics Service (NEW)
+        # ✅ Analytics Service
         - id: analytics-service
           uri: lb://ANALYTICS-SERVICE
           predicates:
             - Path=/analytics/**
+
+        # ✅ Recurring Service
+        - id: recurring-service
+          uri: lb://RECURRING-SERVICE
+          predicates:
+            - Path=/recurring/**
 
 eureka:
   client:
