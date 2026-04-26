@@ -44,14 +44,15 @@ public class RecurringScheduler {
                         "title", r.getTitle(),
                         "amount", r.getAmount(),
                         "categoryId", r.getCategoryId(),
-                        "type", r.getType().toString(),   // 🔥 FIX
-                        "currency", "INR",                // 🔥 FIX
-                        "paymentMethod", "AUTO",          // 🔥 FIX
+                        "type", r.getType().toString(),
+                        "currency", "INR",
+                        "paymentMethod", "AUTO",
                         "date", LocalDateTime.now().toString(),
                         "notes", "Auto-generated recurring",
                         "isRecurring", true
                 );
 
+                // CALL EXPENSE / INCOME SERVICE
                 if (r.getType() == RecurringType.EXPENSE) {
 
                     restTemplate.postForObject(
@@ -69,7 +70,10 @@ public class RecurringScheduler {
                     );
                 }
 
-                // ✅ update next execution
+                // EMAIL TRIGGER
+                sendEmail(r);
+
+                // UPDATE NEXT DATE
                 r.setNextExecutionDate(r.getNextExecutionDate().plusMonths(1));
                 repository.save(r);
 
@@ -80,6 +84,31 @@ public class RecurringScheduler {
                 System.out.println("❌ Error processing: " + r.getTitle());
                 e.printStackTrace();
             }
+        }
+    }
+
+    // EMAIL METHOD
+    private void sendEmail(Recurring r) {
+
+        try {
+            String url = "http://localhost:8088/notifications/email";
+
+            Map<String, String> email = Map.of(
+                    "to", "kushwahaabhishek10k@gmail.com",
+                    "subject", "Recurring Transaction Alert",
+                    "body", "Recurring executed:\n" +
+                            "Title: " + r.getTitle() +
+                            "\nAmount: ₹" + r.getAmount() +
+                            "\nDate: " + LocalDateTime.now()
+            );
+
+            restTemplate.postForObject(url, email, String.class);
+
+            System.out.println("📧 Email sent for: " + r.getTitle());
+
+        } catch (Exception e) {
+            System.out.println("❌ Email failed: " + r.getTitle());
+            e.printStackTrace();
         }
     }
 }
