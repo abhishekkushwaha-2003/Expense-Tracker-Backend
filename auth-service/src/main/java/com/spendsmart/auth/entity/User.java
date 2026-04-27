@@ -1,8 +1,7 @@
 package com.spendsmart.auth.entity;
 
-import com.spendsmart.auth.entity.AuthProvider; 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.time.LocalDateTime;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -29,21 +28,23 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
+    @JsonAlias("username")
     private String fullName;
 
     @Column(unique = true, nullable = false)
     private String email;
 
+    @JsonAlias("password")
     private String passwordHash;
 
-    private String currency; 
+    private String currency;
 
     private String timezone;
 
     private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
-    private AuthProvider provider; 
+    private AuthProvider provider;
 
     private Boolean isActive = true;
 

@@ -1,6 +1,8 @@
 package com.spendsmart.notification.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.spendsmart.notification.dto.EmailRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -8,18 +10,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
 
-    public void sendEmail(String to, String subject, String body) {
+    private final JavaMailSender mailSender;
 
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    public void sendEmail(EmailRequest request) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body);
-
+        message.setTo(request.getTo());
+        message.setSubject(request.getSubject());
+        message.setText(request.getBody());
         mailSender.send(message);
-
-        System.out.println("✅ Email Sent Successfully");
+        LOGGER.info("Email sent to {}", request.getTo());
     }
 }
