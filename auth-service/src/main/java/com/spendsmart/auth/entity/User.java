@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -51,6 +52,9 @@ public class User {
     private LocalDateTime createdAt;
 
     private Double monthlyBudget;
+
+    @Transient
+    private String otp;
 
     @PrePersist
     public void onCreate() {

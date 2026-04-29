@@ -19,6 +19,24 @@ spring:
       hibernate:
         format_sql: true
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: kushwahaabhishek10k@gmail.com
+    password: "wogm jnvp bzdq ydqt"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+app:
+  otp:
+    expiry-minutes: 10
+    from-email: kushwahaabhishek10k@gmail.com
+
 eureka:
   client:
     service-url:

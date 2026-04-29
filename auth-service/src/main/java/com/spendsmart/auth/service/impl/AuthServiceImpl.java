@@ -6,6 +6,7 @@ import com.spendsmart.auth.entity.User;
 import com.spendsmart.auth.repository.UserRepository;
 import com.spendsmart.auth.security.JwtUtil;
 import com.spendsmart.auth.service.AuthService;
+import com.spendsmart.auth.service.OtpService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -19,11 +20,13 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final RestTemplate restTemplate;
+    private final OtpService otpService;
 
-    public AuthServiceImpl(UserRepository userRepository, JwtUtil jwtUtil, RestTemplate restTemplate) {
+    public AuthServiceImpl(UserRepository userRepository, JwtUtil jwtUtil, RestTemplate restTemplate, OtpService otpService) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.restTemplate = restTemplate;
+        this.otpService = otpService;
     }
 
     @Override
@@ -41,6 +44,8 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
 
+        otpService.verifyRegistrationOtp(user.getEmail(), user.getOtp());
+
         user.setProvider(AuthProvider.LOCAL);
         user.setIsActive(true);
         if (user.getCurrency() == null || user.getCurrency().isBlank()) {
@@ -53,6 +58,16 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
         sendWelcomeNotification(savedUser);
         return savedUser;
+    }
+
+    @Override
+    public void sendRegistrationOtp(String email) {
+        otpService.sendRegistrationOtp(email);
+    }
+
+    @Override
+    public void verifyRegistrationOtp(String email, String otp) {
+        otpService.checkRegistrationOtp(email, otp);
     }
 
     @Override
