@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.spendsmart.budget.entity.Budget;
 import com.spendsmart.budget.repository.BudgetRepository;
@@ -24,6 +26,15 @@ public class BudgetServiceImpl implements BudgetService {
 
     @Override
     public Budget createBudget(Budget budget) {
+        Budget existing = findLatestBudgetForMonth(budget.getUserId(), budget.getMonth(), budget.getYear());
+        if (existing != null) {
+            copyBudgetFields(existing, budget);
+            applyDerivedFields(existing);
+            Budget savedBudget = budgetRepository.save(existing);
+            notifyBudgetLimitReached(savedBudget);
+            return savedBudget;
+        }
+
         applyDerivedFields(budget);
         Budget savedBudget = budgetRepository.save(budget);
         notifyBudgetLimitReached(savedBudget);
@@ -33,7 +44,7 @@ public class BudgetServiceImpl implements BudgetService {
     @Override
     public Budget getBudgetById(Long id) {
         return budgetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Budget not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Budget not found"));
     }
 
     @Override
@@ -43,8 +54,12 @@ public class BudgetServiceImpl implements BudgetService {
 
     @Override
     public Budget getBudgetByMonth(Long userId, Integer month, Integer year) {
-        return budgetRepository.findByUserIdAndMonthAndYear(userId, month, year)
-                .orElseThrow(() -> new RuntimeException("Budget not found for this month"));
+        Budget budget = findLatestBudgetForMonth(userId, month, year);
+        if (budget == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Budget not found for this month");
+        }
+
+        return budget;
     }
 
     @Override
@@ -52,12 +67,7 @@ public class BudgetServiceImpl implements BudgetService {
 
         Budget existing = getBudgetById(id);
 
-        existing.setUserId(budget.getUserId());
-        existing.setMonthlyLimit(budget.getMonthlyLimit());
-        existing.setSpentAmount(budget.getSpentAmount());
-        existing.setCurrency(budget.getCurrency());
-        existing.setMonth(budget.getMonth());
-        existing.setYear(budget.getYear());
+        copyBudgetFields(existing, budget);
         applyDerivedFields(existing);
         Budget savedBudget = budgetRepository.save(existing);
         notifyBudgetLimitReached(savedBudget);
@@ -72,6 +82,31 @@ public class BudgetServiceImpl implements BudgetService {
     private void applyDerivedFields(Budget budget) {
         if (budget.getMonthlyLimit() != null) {
             budget.setLimitAmount(BigDecimal.valueOf(budget.getMonthlyLimit()));
+        }
+    }
+
+    private Budget findLatestBudgetForMonth(Long userId, Integer month, Integer year) {
+        if (userId == null || month == null || year == null) {
+            return null;
+        }
+
+        List<Budget> matches = budgetRepository.findByUserIdAndMonthAndYearOrderByBudgetIdDesc(userId, month, year);
+        return matches.isEmpty() ? null : matches.get(0);
+    }
+
+    private void copyBudgetFields(Budget target, Budget source) {
+        target.setUserId(source.getUserId());
+        target.setMonthlyLimit(source.getMonthlyLimit());
+        target.setSpentAmount(source.getSpentAmount() == null ? target.getSpentAmount() : source.getSpentAmount());
+        target.setCurrency(source.getCurrency());
+        target.setMonth(source.getMonth());
+        target.setYear(source.getYear());
+        target.setAlertThreshold(source.getAlertThreshold());
+        target.setCategoryId(source.getCategoryId());
+        target.setName(source.getName());
+        target.setPeriod(source.getPeriod());
+        if (source.getIsActive() != null) {
+            target.setIsActive(source.getIsActive());
         }
     }
 
