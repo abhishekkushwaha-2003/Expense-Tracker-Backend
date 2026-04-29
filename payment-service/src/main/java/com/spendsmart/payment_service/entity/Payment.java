@@ -55,9 +55,23 @@ public class Payment {
 
     private String transactionReference;
 
+    private String featureCode;
+
+    private String providerName;
+
+    private String providerOrderId;
+
+    private String providerPaymentId;
+
+    private String providerSignature;
+
+    private String payerEmail;
+
     private String notes;
 
     private LocalDateTime paidAt;
+
+    private LocalDateTime accessValidUntil;
 
     private LocalDateTime createdAt;
 
@@ -71,6 +85,9 @@ public class Payment {
         }
         if (this.status == null) {
             this.status = PaymentStatus.COMPLETED;
+        }
+        if (this.providerName == null || this.providerName.isBlank()) {
+            this.providerName = "MANUAL";
         }
         normalizeCurrency();
     }

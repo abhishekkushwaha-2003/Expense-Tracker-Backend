@@ -1,6 +1,7 @@
 package com.spendsmart.payment_service.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -17,4 +18,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByUserIdAndPaymentMethod(Long userId, PaymentMethod paymentMethod);
 
     List<Payment> findByUserIdAndStatus(Long userId, PaymentStatus status);
+
+    Optional<Payment> findByProviderOrderId(String providerOrderId);
+
+    Optional<Payment> findTopByUserIdAndFeatureCodeAndStatusOrderByAccessValidUntilDesc(
+            Long userId,
+            String featureCode,
+            PaymentStatus status
+    );
 }

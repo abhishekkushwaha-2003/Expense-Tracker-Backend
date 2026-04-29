@@ -14,7 +14,15 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
+
+razorpay:
+  key-id: rzp_test_SjFjdhZ3gjrrh6
+  key-secret: zKHuN17OIiv7NIfCT1qz48W8
+  recurring-plan-name: Recurring Access Plan
+  recurring-amount: 199.0
+  recurring-currency: INR
+  recurring-validity-days: 30
 
 eureka:
   client:

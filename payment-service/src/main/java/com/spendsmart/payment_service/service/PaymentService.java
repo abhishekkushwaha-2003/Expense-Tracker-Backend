@@ -2,7 +2,11 @@ package com.spendsmart.payment_service.service;
 
 import java.util.List;
 
+import com.spendsmart.payment_service.dto.PaymentVerificationRequest;
 import com.spendsmart.payment_service.dto.PaymentSummary;
+import com.spendsmart.payment_service.dto.RecurringAccessOrderRequest;
+import com.spendsmart.payment_service.dto.RecurringAccessOrderResponse;
+import com.spendsmart.payment_service.dto.RecurringAccessStatusResponse;
 import com.spendsmart.payment_service.entity.Payment;
 import com.spendsmart.payment_service.entity.PaymentMethod;
 import com.spendsmart.payment_service.entity.PaymentStatus;
@@ -28,4 +32,10 @@ public interface PaymentService {
     Payment updateStatus(Long id, PaymentStatus status);
 
     void deletePayment(Long id);
+
+    RecurringAccessOrderResponse createRecurringAccessOrder(RecurringAccessOrderRequest request);
+
+    Payment verifyRecurringAccessPayment(PaymentVerificationRequest request);
+
+    RecurringAccessStatusResponse getRecurringAccessStatus(Long userId);
 }

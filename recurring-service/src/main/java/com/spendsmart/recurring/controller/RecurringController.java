@@ -2,11 +2,19 @@ package com.spendsmart.recurring.controller;
 
 import com.spendsmart.recurring.entity.Recurring;
 import com.spendsmart.recurring.repository.RecurringRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/recurring")
@@ -15,51 +23,62 @@ public class RecurringController {
     @Autowired
     private RecurringRepository repository;
 
-    //  CREATE RECURRING
+    @Autowired
+    private RestTemplate restTemplate;
+
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Recurring recurring) {
-
         try {
-            
-            System.out.println("Incoming Request → " + recurring);
-
-            // safety check
             if (recurring.getStartDate() == null) {
                 return ResponseEntity.badRequest().body("startDate is required");
+            }
+
+            if (!hasRecurringAccess(recurring.getUserId())) {
+                return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                        .body("Recurring access requires an active payment.");
             }
 
             recurring.setNextExecutionDate(recurring.getStartDate());
             recurring.setActive(true);
 
             Recurring saved = repository.save(recurring);
-
             return ResponseEntity.ok(saved);
-
-        } catch (Exception e) {
-            e.printStackTrace(); 
-            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body("Error: " + ex.getMessage());
         }
     }
 
-    //  GET ALL
     @GetMapping
     public List<Recurring> getAll() {
         return repository.findAll();
     }
 
-    //  GET BY USER
     @GetMapping("/user/{userId}")
     public List<Recurring> getByUser(@PathVariable Long userId) {
         return repository.findAll()
                 .stream()
-                .filter(r -> r.getUserId().equals(userId))
+                .filter(recurring -> recurring.getUserId().equals(userId))
                 .toList();
     }
 
-    //  DELETE
     @DeleteMapping("/{id}")
     public String delete(@PathVariable Long id) {
         repository.deleteById(id);
         return "Deleted successfully";
+    }
+
+    private boolean hasRecurringAccess(Long userId) {
+        if (userId == null || userId <= 0) {
+            return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> response = restTemplate.getForObject(
+                "http://PAYMENT-SERVICE/payments/recurring-access/user/{userId}/status",
+                Map.class,
+                userId
+        );
+
+        return response != null && Boolean.TRUE.equals(response.get("active"));
     }
 }

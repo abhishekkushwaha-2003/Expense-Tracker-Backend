@@ -64,8 +64,13 @@ public class RecurringScheduler {
 
     private void sendEmail(Recurring recurring) {
         try {
+            String recipientEmail = fetchUserEmail(recurring.getUserId());
+            if (recipientEmail == null || recipientEmail.isBlank()) {
+                return;
+            }
+
             Map<String, String> email = Map.of(
-                    "to", "kushwahaabhishek10k@gmail.com",
+                    "to", recipientEmail,
                     "subject", "Recurring Transaction Alert",
                     "body", "Recurring executed:\n"
                             + "Title: " + recurring.getTitle()
@@ -81,5 +86,25 @@ public class RecurringScheduler {
         } catch (Exception ex) {
             LOGGER.error("Recurring email failed for {}", recurring.getTitle(), ex);
         }
+    }
+
+    private String fetchUserEmail(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> user = restTemplate.getForObject(
+                "http://AUTH-SERVICE/auth/internal/users/{userId}",
+                Map.class,
+                userId
+        );
+
+        if (user == null) {
+            return null;
+        }
+
+        Object email = user.get("email");
+        return email == null ? null : email.toString();
     }
 }

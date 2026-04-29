@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.spendsmart.payment_service.dto.PaymentSummary;
+import com.spendsmart.payment_service.dto.PaymentVerificationRequest;
+import com.spendsmart.payment_service.dto.RecurringAccessOrderRequest;
+import com.spendsmart.payment_service.dto.RecurringAccessOrderResponse;
+import com.spendsmart.payment_service.dto.RecurringAccessStatusResponse;
 import com.spendsmart.payment_service.entity.Payment;
 import com.spendsmart.payment_service.entity.PaymentMethod;
 import com.spendsmart.payment_service.entity.PaymentStatus;
@@ -35,6 +39,25 @@ public class PaymentController {
     @PostMapping
     public Payment createPayment(@Valid @RequestBody Payment payment) {
         return paymentService.createPayment(payment);
+    }
+
+    @PostMapping("/recurring-access/order")
+    public RecurringAccessOrderResponse createRecurringAccessOrder(
+            @Valid @RequestBody RecurringAccessOrderRequest request
+    ) {
+        return paymentService.createRecurringAccessOrder(request);
+    }
+
+    @PostMapping("/recurring-access/verify")
+    public Payment verifyRecurringAccessPayment(
+            @Valid @RequestBody PaymentVerificationRequest request
+    ) {
+        return paymentService.verifyRecurringAccessPayment(request);
+    }
+
+    @GetMapping("/recurring-access/user/{userId}/status")
+    public RecurringAccessStatusResponse getRecurringAccessStatus(@PathVariable Long userId) {
+        return paymentService.getRecurringAccessStatus(userId);
     }
 
     @GetMapping("/{id}")

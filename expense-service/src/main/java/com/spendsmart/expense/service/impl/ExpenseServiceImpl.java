@@ -47,9 +47,14 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         existing.setTitle(expense.getTitle());
         existing.setAmount(expense.getAmount());
+        existing.setCurrency(expense.getCurrency());
         existing.setCategoryId(expense.getCategoryId());
+        existing.setType(expense.getType());
         existing.setPaymentMethod(expense.getPaymentMethod());
+        existing.setDate(expense.getDate());
         existing.setNotes(expense.getNotes());
+        existing.setReceiptUrl(expense.getReceiptUrl());
+        existing.setIsRecurring(expense.getIsRecurring());
         Expense savedExpense = expenseRepository.save(existing);
         syncBudgetUsage(savedExpense.getUserId(), savedExpense.getDate());
         return savedExpense;
