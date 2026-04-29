@@ -1,5 +1,6 @@
 package com.spendsmart.auth.controller;
 
+import com.spendsmart.auth.dto.UserPreferencesRequest;
 import com.spendsmart.auth.entity.User;
 import com.spendsmart.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,5 +23,20 @@ public class AuthController {
     @PostMapping("/login")
     public String login(@RequestBody User user) {
         return authService.login(user.getEmail(), user.getPasswordHash());
+    }
+
+    @GetMapping("/users/{userId}")
+    public User getUser(@PathVariable Long userId) {
+        return authService.getUserById(userId);
+    }
+
+    @GetMapping("/internal/users/{userId}")
+    public User getInternalUser(@PathVariable Long userId) {
+        return authService.getUserById(userId);
+    }
+
+    @PutMapping("/users/{userId}/preferences")
+    public User updatePreferences(@PathVariable Long userId, @RequestBody UserPreferencesRequest request) {
+        return authService.updatePreferences(userId, request);
     }
 }

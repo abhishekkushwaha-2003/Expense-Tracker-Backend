@@ -26,7 +26,10 @@ spring:
         smtp:
           auth: true
           starttls:
-            enable: true
+            enable: true		
+  devtools:
+    restart:
+      enabled: false
 
 eureka:
   client:
