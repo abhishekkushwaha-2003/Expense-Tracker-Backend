@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: admin-service
+
+server:
+  port: 8091
+
+admin:
+  email: kushwahaabhishek1000k@gmail.com
+  password: SpendSmart@2003
+  full-name: SpendSmart Admin
+
+services:
+  auth-base-url: http://localhost:8080/auth
+  expense-base-url: http://localhost:8080/expenses
+  income-base-url: http://localhost:8080/income
+  category-base-url: http://localhost:8080/categories
+  notification-base-url: http://localhost:8080/notifications
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: localhost
+    prefer-ip-address: true

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,19 +33,16 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @JsonAlias("password")
-    private String passwordHash;
+    @JsonAlias("passwordHash")
+    @Column(name = "password")
+    private String password;
 
     private String currency;
 
     private String timezone;
 
-    private String avatarUrl;
-
-    @Enumerated(EnumType.STRING)
-    private AuthProvider provider;
-
-    private Boolean isActive = true;
+    @Column(name = "status")
+    private String status = "active";
 
     private LocalDateTime createdAt;
 

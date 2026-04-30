@@ -4,6 +4,7 @@ import com.spendsmart.auth.dto.UserPreferencesRequest;
 import com.spendsmart.auth.dto.SendOtpRequest;
 import com.spendsmart.auth.dto.VerifyOtpRequest;
 import com.spendsmart.auth.entity.User;
+import java.util.List;
 import com.spendsmart.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class AuthController {
     // Login API
     @PostMapping("/login")
     public String login(@RequestBody User user) {
-        return authService.login(user.getEmail(), user.getPasswordHash());
+        return authService.login(user.getEmail(), user.getPassword());
     }
 
     @GetMapping("/users/{userId}")
@@ -47,6 +48,21 @@ public class AuthController {
     @GetMapping("/internal/users/{userId}")
     public User getInternalUser(@PathVariable Long userId) {
         return authService.getUserById(userId);
+    }
+
+    @GetMapping("/internal/users")
+    public List<User> getAllInternalUsers() {
+        return authService.getAllUsers();
+    }
+
+    @PutMapping("/internal/users/{userId}/status")
+    public User updateInternalUserStatus(@PathVariable Long userId, @RequestParam boolean active) {
+        return authService.updateUserStatus(userId, active);
+    }
+
+    @DeleteMapping("/internal/users/{userId}")
+    public void deleteInternalUser(@PathVariable Long userId) {
+        authService.deleteUser(userId);
     }
 
     @PutMapping("/users/{userId}/preferences")

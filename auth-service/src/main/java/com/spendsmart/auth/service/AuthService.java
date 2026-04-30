@@ -2,6 +2,7 @@ package com.spendsmart.auth.service;
 
 import com.spendsmart.auth.dto.UserPreferencesRequest;
 import com.spendsmart.auth.entity.User;
+import java.util.List;
 
 public interface AuthService {
 
@@ -16,4 +17,10 @@ public interface AuthService {
     User getUserById(Long userId);
 
     User updatePreferences(Long userId, UserPreferencesRequest request);
+
+    List<User> getAllUsers();
+
+    User updateUserStatus(Long userId, boolean active);
+
+    void deleteUser(Long userId);
 }

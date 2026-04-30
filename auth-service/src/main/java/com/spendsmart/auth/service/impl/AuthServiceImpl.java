@@ -1,12 +1,12 @@
 package com.spendsmart.auth.service.impl;
 
 import com.spendsmart.auth.dto.UserPreferencesRequest;
-import com.spendsmart.auth.entity.AuthProvider;
 import com.spendsmart.auth.entity.User;
 import com.spendsmart.auth.repository.UserRepository;
 import com.spendsmart.auth.security.JwtUtil;
 import com.spendsmart.auth.service.AuthService;
 import com.spendsmart.auth.service.OtpService;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -36,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
         }
 
-        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
 
@@ -46,8 +46,7 @@ public class AuthServiceImpl implements AuthService {
 
         otpService.verifyRegistrationOtp(user.getEmail(), user.getOtp());
 
-        user.setProvider(AuthProvider.LOCAL);
-        user.setIsActive(true);
+        user.setStatus("active");
         if (user.getCurrency() == null || user.getCurrency().isBlank()) {
             user.setCurrency("INR");
         }
@@ -84,11 +83,11 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if (!Boolean.TRUE.equals(user.getIsActive())) {
+        if (!"active".equalsIgnoreCase(user.getStatus())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is inactive");
         }
 
-        if (!user.getPasswordHash().equals(password)) {
+        if (!user.getPassword().equals(password)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid password");
         }
 
@@ -125,6 +124,24 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return userRepository.save(user);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public User updateUserStatus(Long userId, boolean active) {
+        User user = getUserById(userId);
+        user.setStatus(active ? "active" : "deactive");
+        return userRepository.save(user);
+    }
+
+    @Override
+    public void deleteUser(Long userId) {
+        User user = getUserById(userId);
+        userRepository.delete(user);
     }
 
     private void sendWelcomeNotification(User user) {
