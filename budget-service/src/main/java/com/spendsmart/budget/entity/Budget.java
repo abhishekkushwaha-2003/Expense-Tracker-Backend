@@ -56,6 +56,10 @@ public class Budget {
 
     private Boolean isActive;
 
+    private Boolean thresholdAlertSent;
+
+    private Boolean limitAlertSent;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -78,7 +82,7 @@ public class Budget {
 
     private void applyDefaults() {
         if (this.alertThreshold == null) {
-            this.alertThreshold = 80;
+            this.alertThreshold = 75;
         }
         if (this.categoryId == null) {
             this.categoryId = 0;
@@ -91,6 +95,12 @@ public class Budget {
         }
         if (this.period == null) {
             this.period = BudgetPeriod.MONTHLY;
+        }
+        if (this.thresholdAlertSent == null) {
+            this.thresholdAlertSent = false;
+        }
+        if (this.limitAlertSent == null) {
+            this.limitAlertSent = false;
         }
     }
 }

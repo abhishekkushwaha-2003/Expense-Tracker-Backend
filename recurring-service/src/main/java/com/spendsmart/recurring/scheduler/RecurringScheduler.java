@@ -29,6 +29,7 @@ public class RecurringScheduler {
     @Scheduled(fixedRate = 60000)
     public void processRecurring() {
         LocalDate today = LocalDate.now();
+        sendDueSoonReminders(today);
         List<Recurring> list = repository.findByNextExecutionDateAndActive(today, true);
 
         for (Recurring recurring : list) {
@@ -54,12 +55,71 @@ public class RecurringScheduler {
                 }
 
                 sendEmail(recurring);
-                recurring.setNextExecutionDate(recurring.getNextExecutionDate().plusMonths(1));
+                recurring.setNextExecutionDate(calculateNextExecutionDate(recurring));
+                recurring.setLastReminderSentAt(null);
                 repository.save(recurring);
             } catch (Exception ex) {
                 LOGGER.error("Recurring execution failed for {}", recurring.getTitle(), ex);
             }
         }
+    }
+
+    private void sendDueSoonReminders(LocalDate today) {
+        LocalDate reminderDate = today.plusDays(3);
+        List<Recurring> dueSoon = repository.findByNextExecutionDateAndActive(reminderDate, true);
+
+        for (Recurring recurring : dueSoon) {
+            if (today.equals(recurring.getLastReminderSentAt())) {
+                continue;
+            }
+
+            try {
+                String recipientEmail = fetchUserEmail(recurring.getUserId());
+                Map<String, Object> notification = new LinkedHashMap<>();
+                notification.put("recipientId", recurring.getUserId());
+                notification.put("recipientEmail", recipientEmail);
+                notification.put("type", "RECURRING_DUE");
+                notification.put("severity", "INFO");
+                notification.put("title", "Recurring transaction due in 3 days");
+                notification.put(
+                        "message",
+                        String.format(
+                                "Your recurring %s \"%s\" of INR %.2f is due on %s.",
+                                recurring.getType().name().toLowerCase(),
+                                recurring.getTitle(),
+                                recurring.getAmount(),
+                                recurring.getNextExecutionDate()
+                        )
+                );
+                notification.put("relatedId", recurring.getId());
+                notification.put("relatedType", "RECURRING");
+                notification.put("emailEnabled", true);
+
+                restTemplate.postForObject(
+                        "http://NOTIFICATION-SERVICE/notifications/send",
+                        notification,
+                        Object.class
+                );
+
+                recurring.setLastReminderSentAt(today);
+                repository.save(recurring);
+            } catch (Exception ex) {
+                LOGGER.error("Recurring reminder failed for {}", recurring.getTitle(), ex);
+            }
+        }
+    }
+
+    private LocalDate calculateNextExecutionDate(Recurring recurring) {
+        LocalDate currentDate = recurring.getNextExecutionDate();
+        String frequency = recurring.getFrequency() == null ? "MONTHLY" : recurring.getFrequency().trim().toUpperCase();
+
+        return switch (frequency) {
+            case "DAILY" -> currentDate.plusDays(1);
+            case "WEEKLY" -> currentDate.plusWeeks(1);
+            case "QUARTERLY" -> currentDate.plusMonths(3);
+            case "YEARLY" -> currentDate.plusYears(1);
+            default -> currentDate.plusMonths(1);
+        };
     }
 
     private void sendEmail(Recurring recurring) {

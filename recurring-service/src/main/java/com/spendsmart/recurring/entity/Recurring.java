@@ -45,5 +45,8 @@ public class Recurring {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate nextExecutionDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate lastReminderSentAt;
+
     private boolean active;
 }

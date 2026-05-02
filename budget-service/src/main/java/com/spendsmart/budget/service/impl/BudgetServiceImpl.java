@@ -31,13 +31,13 @@ public class BudgetServiceImpl implements BudgetService {
             copyBudgetFields(existing, budget);
             applyDerivedFields(existing);
             Budget savedBudget = budgetRepository.save(existing);
-            notifyBudgetLimitReached(savedBudget);
+            notifyBudgetAlerts(savedBudget);
             return savedBudget;
         }
 
         applyDerivedFields(budget);
         Budget savedBudget = budgetRepository.save(budget);
-        notifyBudgetLimitReached(savedBudget);
+        notifyBudgetAlerts(savedBudget);
         return savedBudget;
     }
 
@@ -70,7 +70,7 @@ public class BudgetServiceImpl implements BudgetService {
         copyBudgetFields(existing, budget);
         applyDerivedFields(existing);
         Budget savedBudget = budgetRepository.save(existing);
-        notifyBudgetLimitReached(savedBudget);
+        notifyBudgetAlerts(savedBudget);
         return savedBudget;
     }
 
@@ -110,39 +110,81 @@ public class BudgetServiceImpl implements BudgetService {
         }
     }
 
-    private void notifyBudgetLimitReached(Budget budget) {
+    private void notifyBudgetAlerts(Budget budget) {
         double monthlyLimit = budget.getMonthlyLimit() == null ? 0.0 : budget.getMonthlyLimit();
         if (monthlyLimit <= 0) {
             return;
         }
 
         double spentAmount = budget.getSpentAmount() == null ? 0.0 : budget.getSpentAmount();
-        double alertThreshold = budget.getAlertThreshold() == null ? 80.0 : budget.getAlertThreshold();
-        if (spentAmount < monthlyLimit) {
+        double alertThreshold = budget.getAlertThreshold() == null ? 75.0 : budget.getAlertThreshold();
+        double usagePercent = (spentAmount / monthlyLimit) * 100.0;
+        boolean thresholdReached = usagePercent >= alertThreshold && spentAmount < monthlyLimit;
+        boolean limitReached = spentAmount >= monthlyLimit;
+
+        boolean changed = false;
+        if (!thresholdReached && Boolean.TRUE.equals(budget.getThresholdAlertSent())) {
+            budget.setThresholdAlertSent(false);
+            changed = true;
+        }
+        if (!limitReached && Boolean.TRUE.equals(budget.getLimitAlertSent())) {
+            budget.setLimitAlertSent(false);
+            changed = true;
+        }
+        if (changed) {
+            budgetRepository.save(budget);
+        }
+
+        if (!thresholdReached && !limitReached) {
             return;
         }
 
         try {
             String recipientEmail = fetchRecipientEmail(budget.getUserId());
-            Map<String, Object> request = new LinkedHashMap<>();
-            request.put("recipientId", budget.getUserId());
-            request.put("recipientEmail", recipientEmail);
-            request.put("budgetId", budget.getBudgetId());
-            request.put("categoryId", budget.getCategoryId() == null || budget.getCategoryId() == 0 ? null : budget.getCategoryId());
-            request.put("budgetName", budget.getName());
-            request.put("spentAmount", spentAmount);
-            request.put("limitAmount", monthlyLimit);
-            request.put("alertThreshold", alertThreshold);
-            request.put("currency", budget.getCurrency() == null || budget.getCurrency().isBlank() ? "INR" : budget.getCurrency());
+            if (thresholdReached && !Boolean.TRUE.equals(budget.getThresholdAlertSent())) {
+                restTemplate.postForObject(
+                        "http://NOTIFICATION-SERVICE/notifications/budget-alert",
+                        buildBudgetAlertRequest(budget, recipientEmail, spentAmount, monthlyLimit, alertThreshold),
+                        Object.class
+                );
+                budget.setThresholdAlertSent(true);
+                changed = true;
+            }
 
-            restTemplate.postForObject(
-                    "http://NOTIFICATION-SERVICE/notifications/budget-alert",
-                    request,
-                    Object.class
-            );
+            if (limitReached && !Boolean.TRUE.equals(budget.getLimitAlertSent())) {
+                restTemplate.postForObject(
+                        "http://NOTIFICATION-SERVICE/notifications/budget-alert",
+                        buildBudgetAlertRequest(budget, recipientEmail, spentAmount, monthlyLimit, alertThreshold),
+                        Object.class
+                );
+                budget.setLimitAlertSent(true);
+                changed = true;
+            }
         } catch (Exception ex) {
             // Budget save should still succeed if notification delivery is unavailable.
         }
+
+        if (changed) {
+            budgetRepository.save(budget);
+        }
+    }
+
+    private Map<String, Object> buildBudgetAlertRequest(Budget budget,
+                                                        String recipientEmail,
+                                                        double spentAmount,
+                                                        double monthlyLimit,
+                                                        double alertThreshold) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("recipientId", budget.getUserId());
+        request.put("recipientEmail", recipientEmail);
+        request.put("budgetId", budget.getBudgetId());
+        request.put("categoryId", budget.getCategoryId() == null || budget.getCategoryId() == 0 ? null : budget.getCategoryId());
+        request.put("budgetName", budget.getName());
+        request.put("spentAmount", spentAmount);
+        request.put("limitAmount", monthlyLimit);
+        request.put("alertThreshold", alertThreshold);
+        request.put("currency", budget.getCurrency() == null || budget.getCurrency().isBlank() ? "INR" : budget.getCurrency());
+        return request;
     }
 
     private String fetchRecipientEmail(Long userId) {

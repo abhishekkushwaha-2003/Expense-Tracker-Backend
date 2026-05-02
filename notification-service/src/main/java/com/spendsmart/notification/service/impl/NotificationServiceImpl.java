@@ -42,6 +42,7 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification sendBudgetAlert(BudgetAlertRequest request) {
         double usagePercent = calculateUsagePercent(request.getSpentAmount(), request.getLimitAmount());
         boolean exceeded = request.getSpentAmount() >= request.getLimitAmount();
+        String budgetLabel = buildBudgetLabel(request.getBudgetName());
 
         NotificationSeverity severity = exceeded
                 ? NotificationSeverity.CRITICAL
@@ -52,8 +53,8 @@ public class NotificationServiceImpl implements NotificationService {
                 : NotificationType.BUDGET_ALERT;
 
         String title = exceeded
-                ? "Budget exceeded for " + request.getBudgetName()
-                : "Budget threshold reached for " + request.getBudgetName();
+                ? "Budget exceeded for " + budgetLabel
+                : "Budget threshold reached for " + budgetLabel;
 
         String currency = request.getCurrency() == null || request.getCurrency().isBlank()
                 ? "INR"
@@ -62,8 +63,8 @@ public class NotificationServiceImpl implements NotificationService {
         String message = exceeded
                 ? String.format(
                         Locale.US,
-                        "%s budget is over the limit. Spent %s %.2f out of %s %.2f (%.2f%% used).",
-                        request.getBudgetName(),
+                        "%s is over the limit. Spent %s %.2f out of %s %.2f (%.2f%% used).",
+                        budgetLabel,
                         currency,
                         request.getSpentAmount(),
                         currency,
@@ -72,8 +73,8 @@ public class NotificationServiceImpl implements NotificationService {
                 )
                 : String.format(
                         Locale.US,
-                        "%s budget has reached the %.2f%% alert threshold. Spent %s %.2f out of %s %.2f (%.2f%% used).",
-                        request.getBudgetName(),
+                        "%s has reached the %.2f%% alert threshold. Spent %s %.2f out of %s %.2f (%.2f%% used).",
+                        budgetLabel,
                         request.getAlertThreshold(),
                         currency,
                         request.getSpentAmount(),
@@ -91,7 +92,7 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRequest.setMessage(message);
         notificationRequest.setRelatedId(request.getBudgetId());
         notificationRequest.setRelatedType(request.getCategoryId() == null ? "BUDGET" : "CATEGORY_BUDGET");
-        notificationRequest.setEmailEnabled(severity == NotificationSeverity.CRITICAL);
+        notificationRequest.setEmailEnabled(true);
 
         return send(notificationRequest);
     }
@@ -209,6 +210,18 @@ public class NotificationServiceImpl implements NotificationService {
         if (limitAmount <= 0) {
             throw new IllegalArgumentException("limitAmount must be greater than zero");
         }
-        return (spentAmount / limitAmount) * 100.0;
+        return Math.min((spentAmount / limitAmount) * 100.0, 100.0);
+    }
+
+    private String buildBudgetLabel(String budgetName) {
+        String fallbackName = "Monthly Budget";
+        String resolvedName = budgetName == null || budgetName.isBlank()
+                ? fallbackName
+                : budgetName.trim();
+
+        if (resolvedName.toLowerCase(Locale.ROOT).endsWith("budget")) {
+            return resolvedName;
+        }
+        return resolvedName + " budget";
     }
 }

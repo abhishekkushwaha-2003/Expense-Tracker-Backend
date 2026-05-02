@@ -1,5 +1,7 @@
 package com.spendsmart.auth.controller;
 
+import com.spendsmart.auth.dto.AuthLoginRequest;
+import com.spendsmart.auth.dto.AuthRegisterRequest;
 import com.spendsmart.auth.dto.UserPreferencesRequest;
 import com.spendsmart.auth.dto.SendOtpRequest;
 import com.spendsmart.auth.dto.VerifyOtpRequest;
@@ -7,6 +9,7 @@ import com.spendsmart.auth.entity.User;
 import java.util.List;
 import com.spendsmart.auth.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,8 +21,8 @@ public class AuthController {
 
     //Register API
     @PostMapping("/register")
-    public User register(@RequestBody User user) {
-        return authService.register(user);
+    public User register(@Valid @RequestBody AuthRegisterRequest request) {
+        return authService.register(request.toUser());
     }
 
     @PostMapping("/register/send-otp")
@@ -36,8 +39,8 @@ public class AuthController {
 
     // Login API
     @PostMapping("/login")
-    public String login(@RequestBody User user) {
-        return authService.login(user.getEmail(), user.getPassword());
+    public String login(@Valid @RequestBody AuthLoginRequest request) {
+        return authService.login(request.getEmail(), request.getPassword());
     }
 
     @GetMapping("/users/{userId}")
