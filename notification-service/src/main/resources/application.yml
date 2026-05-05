@@ -31,6 +31,24 @@ spring:
     restart:
       enabled: false
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+app:
+  messaging:
+    notification:
+      async-enabled: false
+      exchange: spendsmart.notification.exchange
+      queues:
+        send: spendsmart.notification.send
+        budget-alert: spendsmart.notification.budget-alert
+      routing:
+        send: notification.send
+        budget-alert: notification.budget.alert
+
 eureka:
   client:
     service-url:

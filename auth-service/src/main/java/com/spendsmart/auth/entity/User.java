@@ -1,6 +1,7 @@
 package com.spendsmart.auth.entity;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +35,7 @@ public class User {
     private String email;
 
     @JsonAlias("passwordHash")
+    @JsonIgnore
     @Column(name = "password")
     private String password;
 

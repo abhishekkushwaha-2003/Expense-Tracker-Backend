@@ -1,6 +1,11 @@
 spring:
   application:
     name: admin-service
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 server:
   port: 8091
@@ -16,6 +21,14 @@ services:
   income-base-url: http://localhost:8080/income
   category-base-url: http://localhost:8080/categories
   notification-base-url: http://localhost:8080/notifications
+
+app:
+  messaging:
+    notification:
+      async-enabled: false
+      exchange: spendsmart.notification.exchange
+      routing:
+        send: notification.send
 
 eureka:
   client:

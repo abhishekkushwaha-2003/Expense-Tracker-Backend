@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.spendsmart.budget.messaging.NotificationPublisher;
 import com.spendsmart.budget.entity.Budget;
 import com.spendsmart.budget.repository.BudgetRepository;
 import com.spendsmart.budget.service.BudgetService;
@@ -24,6 +26,12 @@ public class BudgetServiceImpl implements BudgetService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired(required = false)
+    private NotificationPublisher notificationPublisher;
+
+    @Value("${app.messaging.notification.async-enabled:false}")
+    private boolean asyncNotificationEnabled;
+
     @Override
     public Budget createBudget(Budget budget) {
         Budget existing = findLatestBudgetForMonth(budget.getUserId(), budget.getMonth(), budget.getYear());
@@ -31,12 +39,14 @@ public class BudgetServiceImpl implements BudgetService {
             copyBudgetFields(existing, budget);
             applyDerivedFields(existing);
             Budget savedBudget = budgetRepository.save(existing);
+            syncUserMonthlyBudget(savedBudget);
             notifyBudgetAlerts(savedBudget);
             return savedBudget;
         }
 
         applyDerivedFields(budget);
         Budget savedBudget = budgetRepository.save(budget);
+        syncUserMonthlyBudget(savedBudget);
         notifyBudgetAlerts(savedBudget);
         return savedBudget;
     }
@@ -70,6 +80,7 @@ public class BudgetServiceImpl implements BudgetService {
         copyBudgetFields(existing, budget);
         applyDerivedFields(existing);
         Budget savedBudget = budgetRepository.save(existing);
+        syncUserMonthlyBudget(savedBudget);
         notifyBudgetAlerts(savedBudget);
         return savedBudget;
     }
@@ -142,21 +153,13 @@ public class BudgetServiceImpl implements BudgetService {
         try {
             String recipientEmail = fetchRecipientEmail(budget.getUserId());
             if (thresholdReached && !Boolean.TRUE.equals(budget.getThresholdAlertSent())) {
-                restTemplate.postForObject(
-                        "http://NOTIFICATION-SERVICE/notifications/budget-alert",
-                        buildBudgetAlertRequest(budget, recipientEmail, spentAmount, monthlyLimit, alertThreshold),
-                        Object.class
-                );
+                sendBudgetAlert(buildBudgetAlertRequest(budget, recipientEmail, spentAmount, monthlyLimit, alertThreshold));
                 budget.setThresholdAlertSent(true);
                 changed = true;
             }
 
             if (limitReached && !Boolean.TRUE.equals(budget.getLimitAlertSent())) {
-                restTemplate.postForObject(
-                        "http://NOTIFICATION-SERVICE/notifications/budget-alert",
-                        buildBudgetAlertRequest(budget, recipientEmail, spentAmount, monthlyLimit, alertThreshold),
-                        Object.class
-                );
+                sendBudgetAlert(buildBudgetAlertRequest(budget, recipientEmail, spentAmount, monthlyLimit, alertThreshold));
                 budget.setLimitAlertSent(true);
                 changed = true;
             }
@@ -187,6 +190,19 @@ public class BudgetServiceImpl implements BudgetService {
         return request;
     }
 
+    private void sendBudgetAlert(Map<String, Object> payload) {
+        if (asyncNotificationEnabled && notificationPublisher != null) {
+            notificationPublisher.publishBudgetAlert(payload);
+            return;
+        }
+
+        restTemplate.postForObject(
+                "http://NOTIFICATION-SERVICE/notifications/budget-alert",
+                payload,
+                Object.class
+        );
+    }
+
     private String fetchRecipientEmail(Long userId) {
         if (userId == null) {
             return null;
@@ -205,5 +221,23 @@ public class BudgetServiceImpl implements BudgetService {
 
         Object email = user.get("email");
         return email == null ? null : email.toString();
+    }
+
+    private void syncUserMonthlyBudget(Budget budget) {
+        if (budget.getUserId() == null) {
+            return;
+        }
+
+        try {
+            Map<String, Object> request = new LinkedHashMap<>();
+            request.put("monthlyBudget", budget.getMonthlyLimit());
+            restTemplate.put(
+                    "http://AUTH-SERVICE/auth/users/{userId}/preferences",
+                    request,
+                    budget.getUserId()
+            );
+        } catch (Exception ex) {
+            // Budget save should still succeed if profile sync is unavailable.
+        }
     }
 }

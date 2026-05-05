@@ -2,6 +2,7 @@ package com.spendsmart.expense.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -39,7 +40,7 @@ public class Expense {
     private String currency;
 
     @Enumerated(EnumType.STRING)
-    private ExpenseType type; 
+    private ExpenseType type;
 
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod; 
@@ -48,6 +49,7 @@ public class Expense {
 
     private String notes;
 
+    @Column(length = 2048)
     private String receiptUrl;
 
     private Boolean isRecurring;
@@ -59,10 +61,21 @@ public class Expense {
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
+        applyDefaults();
     }
 
     @PreUpdate
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        applyDefaults();
+    }
+
+    private void applyDefaults() {
+        if (this.type == null) {
+            this.type = ExpenseType.EXPENSE;
+        }
+        if (this.receiptUrl != null && this.receiptUrl.isBlank()) {
+            this.receiptUrl = null;
+        }
     }
 }

@@ -1,6 +1,9 @@
 package com.spendsmart.auth.config;
 
 import jakarta.annotation.PostConstruct;
+import java.util.List;
+import java.util.Map;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -8,9 +11,11 @@ import org.springframework.stereotype.Component;
 public class UserSchemaMigration {
 
     private final JdbcTemplate jdbcTemplate;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserSchemaMigration(JdbcTemplate jdbcTemplate) {
+    public UserSchemaMigration(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostConstruct
@@ -53,6 +58,8 @@ public class UserSchemaMigration {
         dropColumnIfExists("users", "premium_expires_at");
         dropColumnIfExists("users", "role");
         dropColumnIfExists("users", "subscription_type");
+
+        migratePlaintextPasswords();
     }
 
     private boolean columnExists(String tableName, String columnName) {
@@ -80,5 +87,31 @@ public class UserSchemaMigration {
         if (columnExists(tableName, columnName)) {
             jdbcTemplate.execute("ALTER TABLE " + tableName + " DROP COLUMN " + columnName);
         }
+    }
+
+    private void migratePlaintextPasswords() {
+        List<Map<String, Object>> users = jdbcTemplate.queryForList("SELECT user_id, password FROM users");
+        for (Map<String, Object> user : users) {
+            Object userId = user.get("user_id");
+            Object password = user.get("password");
+            if (userId == null || password == null) {
+                continue;
+            }
+
+            String rawPassword = password.toString();
+            if (rawPassword.isBlank() || isBcryptHash(rawPassword)) {
+                continue;
+            }
+
+            jdbcTemplate.update(
+                    "UPDATE users SET password = ? WHERE user_id = ?",
+                    passwordEncoder.encode(rawPassword),
+                    userId
+            );
+        }
+    }
+
+    private boolean isBcryptHash(String value) {
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 }

@@ -2,6 +2,7 @@ package com.spendsmart.recurring.scheduler;
 
 import com.spendsmart.recurring.entity.Recurring;
 import com.spendsmart.recurring.entity.RecurringType;
+import com.spendsmart.recurring.messaging.NotificationPublisher;
 import com.spendsmart.recurring.repository.RecurringRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -25,6 +27,12 @@ public class RecurringScheduler {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired(required = false)
+    private NotificationPublisher notificationPublisher;
+
+    @Value("${app.messaging.notification.async-enabled:false}")
+    private boolean asyncNotificationEnabled;
 
     @Scheduled(fixedRate = 60000)
     public void processRecurring() {
@@ -95,11 +103,7 @@ public class RecurringScheduler {
                 notification.put("relatedType", "RECURRING");
                 notification.put("emailEnabled", true);
 
-                restTemplate.postForObject(
-                        "http://NOTIFICATION-SERVICE/notifications/send",
-                        notification,
-                        Object.class
-                );
+                sendNotification(notification, false);
 
                 recurring.setLastReminderSentAt(today);
                 repository.save(recurring);
@@ -129,23 +133,53 @@ public class RecurringScheduler {
                 return;
             }
 
-            Map<String, String> email = Map.of(
-                    "to", recipientEmail,
-                    "subject", "Recurring Transaction Alert",
-                    "body", "Recurring executed:\n"
+            Map<String, Object> notification = new LinkedHashMap<>();
+            notification.put("recipientId", recurring.getUserId());
+            notification.put("recipientEmail", recipientEmail);
+            notification.put("type", "SYSTEM");
+            notification.put("severity", "INFO");
+            notification.put("title", "Recurring Transaction Alert");
+            notification.put(
+                    "message",
+                    "Recurring executed:\n"
                             + "Title: " + recurring.getTitle()
                             + "\nAmount: Rs " + recurring.getAmount()
                             + "\nDate: " + LocalDateTime.now()
             );
+            notification.put("relatedId", recurring.getId());
+            notification.put("relatedType", "RECURRING");
+            notification.put("emailEnabled", true);
+            sendNotification(notification, true);
+        } catch (Exception ex) {
+            LOGGER.error("Recurring email failed for {}", recurring.getTitle(), ex);
+        }
+    }
 
+    private void sendNotification(Map<String, Object> notification, boolean emailOnlyFallback) {
+        if (asyncNotificationEnabled && notificationPublisher != null) {
+            notificationPublisher.publishNotification(notification);
+            return;
+        }
+
+        if (emailOnlyFallback) {
+            Map<String, String> email = Map.of(
+                    "to", String.valueOf(notification.get("recipientEmail")),
+                    "subject", String.valueOf(notification.get("title")),
+                    "body", String.valueOf(notification.get("message"))
+            );
             restTemplate.postForObject(
                     "http://NOTIFICATION-SERVICE/notifications/email",
                     email,
                     String.class
             );
-        } catch (Exception ex) {
-            LOGGER.error("Recurring email failed for {}", recurring.getTitle(), ex);
+            return;
         }
+
+        restTemplate.postForObject(
+                "http://NOTIFICATION-SERVICE/notifications/send",
+                notification,
+                Object.class
+        );
     }
 
     private String fetchUserEmail(Long userId) {

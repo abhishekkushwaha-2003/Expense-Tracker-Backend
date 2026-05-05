@@ -4,6 +4,7 @@ import com.spendsmart.admin_service.dto.AdminAuditLog;
 import com.spendsmart.admin_service.dto.AdminBroadcastRequest;
 import com.spendsmart.admin_service.dto.AdminLoginRequest;
 import com.spendsmart.admin_service.dto.AdminLoginResponse;
+import com.spendsmart.admin_service.messaging.NotificationPublisher;
 import com.spendsmart.admin_service.service.AdminService;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -28,6 +29,8 @@ import org.springframework.web.server.ResponseStatusException;
 public class AdminServiceImpl implements AdminService {
 
     private final RestTemplate restTemplate;
+    private final NotificationPublisher notificationPublisher;
+    private final boolean asyncNotificationEnabled;
     private final Map<String, String> activeSessions = new ConcurrentHashMap<>();
     private final List<AdminAuditLog> auditLogs = new CopyOnWriteArrayList<>();
 
@@ -55,8 +58,14 @@ public class AdminServiceImpl implements AdminService {
     @Value("${services.notification-base-url}")
     private String notificationBaseUrl;
 
-    public AdminServiceImpl(RestTemplate restTemplate) {
+    public AdminServiceImpl(
+            RestTemplate restTemplate,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) NotificationPublisher notificationPublisher,
+            @Value("${app.messaging.notification.async-enabled:false}") boolean asyncNotificationEnabled
+    ) {
         this.restTemplate = restTemplate;
+        this.notificationPublisher = notificationPublisher;
+        this.asyncNotificationEnabled = asyncNotificationEnabled;
     }
 
     @Override
@@ -215,8 +224,12 @@ public class AdminServiceImpl implements AdminService {
             notifications.add(notification);
         }
 
-        Map<String, Object> payload = Map.of("notifications", notifications);
-        restTemplate.postForObject(notificationBaseUrl + "/bulk", payload, Object.class);
+        if (asyncNotificationEnabled && notificationPublisher != null) {
+            notifications.forEach(notificationPublisher::publishNotification);
+        } else {
+            Map<String, Object> payload = Map.of("notifications", notifications);
+            restTemplate.postForObject(notificationBaseUrl + "/bulk", payload, Object.class);
+        }
 
         addAudit(actor, "BROADCAST", "NOTIFICATION", String.valueOf(notifications.size()), "Sent broadcast to active users");
         return Map.of("sentCount", notifications.size(), "status", "queued");

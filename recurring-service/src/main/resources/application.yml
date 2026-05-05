@@ -16,6 +16,20 @@ spring:
       ddl-auto: update
     show-sql: false
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+app:
+  messaging:
+    notification:
+      async-enabled: false
+      exchange: spendsmart.notification.exchange
+      routing:
+        send: notification.send
+
 eureka:
   client:
     service-url:

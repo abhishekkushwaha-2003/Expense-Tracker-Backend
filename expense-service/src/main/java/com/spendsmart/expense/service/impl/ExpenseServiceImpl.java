@@ -1,6 +1,7 @@
 package com.spendsmart.expense.service.impl;
 
 import com.spendsmart.expense.entity.Expense;
+import com.spendsmart.expense.entity.ExpenseType;
 import com.spendsmart.expense.repository.ExpenseRepository;
 import com.spendsmart.expense.service.ExpenseService;
 import java.time.LocalDateTime;
@@ -24,6 +25,9 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public Expense addExpense(Expense expense) {
+        if (expense.getType() == null) {
+            expense.setType(ExpenseType.EXPENSE);
+        }
         Expense savedExpense = expenseRepository.save(expense);
         syncBudgetUsage(savedExpense.getUserId(), savedExpense.getDate());
         return savedExpense;
@@ -49,7 +53,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         existing.setAmount(expense.getAmount());
         existing.setCurrency(expense.getCurrency());
         existing.setCategoryId(expense.getCategoryId());
-        existing.setType(expense.getType());
+        existing.setType(expense.getType() == null ? ExpenseType.EXPENSE : expense.getType());
         existing.setPaymentMethod(expense.getPaymentMethod());
         existing.setDate(expense.getDate());
         existing.setNotes(expense.getNotes());
