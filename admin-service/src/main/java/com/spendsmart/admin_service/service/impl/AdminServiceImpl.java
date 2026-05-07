@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -321,8 +322,12 @@ public class AdminServiceImpl implements AdminService {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getList(String url) {
-        ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
-        return response.getBody() == null ? List.of() : response.getBody();
+        try {
+            ResponseEntity<List> response = restTemplate.getForEntity(url, List.class);
+            return response.getBody() == null ? List.of() : response.getBody();
+        } catch (RestClientException ignored) {
+            return List.of();
+        }
     }
 
     private void addAudit(String actorEmail, String action, String targetType, String targetId, String details) {

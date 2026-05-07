@@ -123,6 +123,26 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void resetPasswordConsumesOtpAndSavesEncodedPassword() {
+        User user = User.builder()
+                .userId(7L)
+                .email("user@example.com")
+                .password("old-encoded")
+                .status("active")
+                .build();
+
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("NewPass@123")).thenReturn("new-encoded");
+        when(userRepository.save(user)).thenReturn(user);
+
+        service.resetPassword(" USER@example.com ", "123456", "NewPass@123");
+
+        verify(otpService).consumePasswordResetOtp("user@example.com", "123456");
+        verify(userRepository).save(user);
+        assertEquals("new-encoded", user.getPassword());
+    }
+
+    @Test
     void updatePreferencesRejectsNegativeMonthlyBudget() {
         User user = User.builder()
                 .userId(3L)

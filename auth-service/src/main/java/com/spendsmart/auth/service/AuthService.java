@@ -10,7 +10,13 @@ public interface AuthService {
 
     void sendRegistrationOtp(String email);
 
+    void sendPasswordResetOtp(String email);
+
     void verifyRegistrationOtp(String email, String otp);
+
+    void verifyPasswordResetOtp(String email, String otp);
+
+    void resetPassword(String email, String otp, String newPassword);
 
     String login(String email, String password);
 

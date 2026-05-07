@@ -54,6 +54,33 @@ class OtpServiceImplTest {
     }
 
     @Test
+    void sendAndConsumePasswordResetOtpRequiresExistingEmail() {
+        OtpServiceImpl service = new OtpServiceImpl(mailSender, userRepository, null, 10, "noreply@spendsmart.com", false);
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(true);
+
+        service.sendPasswordResetOtp("user@example.com");
+
+        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(messageCaptor.capture());
+
+        String text = messageCaptor.getValue().getText();
+        String otp = text.replaceAll("(?s).*OTP is (\\d{6}).*", "$1");
+
+        service.verifyPasswordResetOtp("user@example.com", otp);
+        service.consumePasswordResetOtp("user@example.com", otp);
+
+        assertThrows(ResponseStatusException.class, () -> service.verifyPasswordResetOtp("user@example.com", otp));
+    }
+
+    @Test
+    void sendPasswordResetOtpRejectsUnknownEmail() {
+        OtpServiceImpl service = new OtpServiceImpl(mailSender, userRepository, null, 10, "noreply@spendsmart.com", false);
+        when(userRepository.existsByEmail("missing@example.com")).thenReturn(false);
+
+        assertThrows(ResponseStatusException.class, () -> service.sendPasswordResetOtp("missing@example.com"));
+    }
+
+    @Test
     void sendRegistrationOtpDeletesStoredCodeWhenMailFails() {
         OtpServiceImpl service = new OtpServiceImpl(mailSender, userRepository, null, 10, "noreply@spendsmart.com", false);
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);

@@ -17,6 +17,14 @@ public class JwtFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        String uri = request.getRequestURI();
+
+        return isPublicAuthPath(path) || isPublicAuthPath(uri);
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
@@ -24,9 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        if (path.startsWith("/auth/login")
-                || path.startsWith("/auth/register")
-                || path.startsWith("/auth/internal/")) {
+        if (isPublicAuthPath(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -46,5 +52,13 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicAuthPath(String path) {
+        return path != null
+                && (path.startsWith("/auth/login")
+                || path.startsWith("/auth/register")
+                || path.startsWith("/auth/password/")
+                || path.startsWith("/auth/internal/"));
     }
 }

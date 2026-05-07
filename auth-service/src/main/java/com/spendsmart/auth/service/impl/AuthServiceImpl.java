@@ -81,8 +81,32 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public void sendPasswordResetOtp(String email) {
+        otpService.sendPasswordResetOtp(email);
+    }
+
+    @Override
     public void verifyRegistrationOtp(String email, String otp) {
         otpService.checkRegistrationOtp(email, otp);
+    }
+
+    @Override
+    public void verifyPasswordResetOtp(String email, String otp) {
+        otpService.verifyPasswordResetOtp(email, otp);
+    }
+
+    @Override
+    public void resetPassword(String email, String otp, String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
+        }
+
+        User user = userRepository.findByEmail(email == null ? "" : email.trim().toLowerCase())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        otpService.consumePasswordResetOtp(user.getEmail(), otp);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     @Override

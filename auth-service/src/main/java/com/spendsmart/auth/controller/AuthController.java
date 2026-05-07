@@ -3,6 +3,7 @@ package com.spendsmart.auth.controller;
 import com.spendsmart.auth.dto.AuthLoginRequest;
 import com.spendsmart.auth.dto.AuthRegisterRequest;
 import com.spendsmart.auth.dto.UserPreferencesRequest;
+import com.spendsmart.auth.dto.ResetPasswordRequest;
 import com.spendsmart.auth.dto.SendOtpRequest;
 import com.spendsmart.auth.dto.VerifyOtpRequest;
 import com.spendsmart.auth.entity.User;
@@ -35,6 +36,24 @@ public class AuthController {
     public String verifyRegistrationOtp(@RequestBody VerifyOtpRequest request) {
         authService.verifyRegistrationOtp(request.getEmail(), request.getOtp());
         return "OTP verified successfully";
+    }
+
+    @PostMapping("/password/forgot/send-otp")
+    public String sendPasswordResetOtp(@RequestBody SendOtpRequest request) {
+        authService.sendPasswordResetOtp(request.getEmail());
+        return "Password reset OTP sent successfully";
+    }
+
+    @PostMapping("/password/forgot/verify-otp")
+    public String verifyPasswordResetOtp(@RequestBody VerifyOtpRequest request) {
+        authService.verifyPasswordResetOtp(request.getEmail(), request.getOtp());
+        return "OTP verified successfully";
+    }
+
+    @PostMapping("/password/reset")
+    public String resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return "Password reset successfully";
     }
 
     // Login API
