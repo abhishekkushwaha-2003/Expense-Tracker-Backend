@@ -53,7 +53,7 @@ public class OtpServiceImpl implements OtpService {
     public void sendRegistrationOtp(String email) {
         String normalizedEmail = normalizeEmail(email);
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered.");
         }
 
         String otp = String.format("%06d", RANDOM.nextInt(1_000_000));

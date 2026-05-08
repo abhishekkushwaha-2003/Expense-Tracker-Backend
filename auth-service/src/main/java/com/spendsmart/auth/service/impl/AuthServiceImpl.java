@@ -56,7 +56,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered.");
         }
 
         otpService.verifyRegistrationOtp(user.getEmail(), user.getOtp());
