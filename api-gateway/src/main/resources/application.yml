@@ -86,7 +86,7 @@ spring:
 
         # ✅ Admin Service
         - id: admin-service
-          uri: lb://ADMIN-SERVICE
+          uri: http://localhost:8091
           predicates:
             - Path=/admin/**
 

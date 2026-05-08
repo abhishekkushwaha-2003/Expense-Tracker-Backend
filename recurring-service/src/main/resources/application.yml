@@ -25,7 +25,7 @@ spring:
 app:
   messaging:
     notification:
-      async-enabled: false
+      async-enabled: true
       exchange: spendsmart.notification.exchange
       routing:
         send: notification.send

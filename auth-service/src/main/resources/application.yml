@@ -35,7 +35,7 @@ spring:
   data:
     redis:
       repositories:
-        enabled: false
+        enabled: true
       host: localhost
       port: 6379
       timeout: 5s
@@ -50,10 +50,10 @@ app:
   otp:
     expiry-minutes: 10
     from-email: kushwahaabhishek10k@gmail.com
-    redis-enabled: false
+    redis-enabled: true
   messaging:
     notification:
-      async-enabled: false
+      async-enabled: true
       exchange: spendsmart.notification.exchange
       routing:
         send: notification.send
