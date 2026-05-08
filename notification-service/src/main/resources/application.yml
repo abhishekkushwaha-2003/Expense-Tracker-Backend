@@ -1,0 +1,59 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/spendsmart_notification_db
+    username: root
+    password: Abhishek@2003
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: kushwahaabhishek10k@gmail.com
+    password: "wogm jnvp bzdq ydqt"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true		
+  devtools:
+    restart:
+      enabled: false
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+app:
+  messaging:
+    notification:
+      async-enabled: true
+      exchange: spendsmart.notification.exchange
+      queues:
+        send: spendsmart.notification.send
+        budget-alert: spendsmart.notification.budget-alert
+      routing:
+        send: notification.send
+        budget-alert: notification.budget.alert
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+  instance:
+    hostname: localhost
+    prefer-ip-address: true

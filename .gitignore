@@ -1,0 +1,66 @@
+# --- Build Artifacts ---
+target/
+build/
+out/
+bin/
+*.jar
+*.war
+*.ear
+*.class
+
+# --- KEEP Build Wrappers (Necessary for Deployment) ---
+!mvnw
+!mvnw.cmd
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+!gradlew
+!gradlew.bat
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# --- IDE Specifics ---
+.idea/
+*.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+.factorypath
+.springBeans
+.sts4-cache
+.vscode/
+
+# --- Local Config & Secrets (Never Deploy These) ---
+.env
+.env.local
+application-*.properties
+application-*.yml
+# Exception: Keep the base config files
+!application.properties
+!application.yml
+
+# --- Logs & OS Files ---
+logs/
+*.log
+tmp/
+.DS_Store
+Thumbs.db
+
+# Eclipse/STS metadata
+.metadata/
+.settings/
+.project
+.classpath
+.factorypath
+
+# Build files
+target/
+bin/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+.pdf
