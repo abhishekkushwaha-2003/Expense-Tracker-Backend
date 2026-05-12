@@ -31,6 +31,15 @@ import static org.mockito.Mockito.*;
 class AuthLayerCoverageTest {
 
     @Test
+    void jwtUtilGeneratesAndValidatesToken() {
+        JwtUtil jwtUtil = new JwtUtil();
+        String token = jwtUtil.generateToken("user@test.com");
+        assertEquals("user@test.com", jwtUtil.extractEmail(token));
+        assertTrue(jwtUtil.validateToken(token));
+        assertFalse(jwtUtil.validateToken("invalid-token"));
+    }
+
+    @Test
     void controllerDelegatesToService() {
         AuthService service = mock(AuthService.class);
         AuthController controller = new AuthController();

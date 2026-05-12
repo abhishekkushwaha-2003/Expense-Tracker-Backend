@@ -5,6 +5,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,14 +58,43 @@ class AnalyticsControllerTest {
         assertThat(summary).containsEntry("balance", 700.0);
     }
 
+    @Test
+    void getTotalExpenseTreatsNullResponseAsEmptyList() {
+        restTemplate.response = null;
+
+        assertThat(analyticsController.getTotalExpense(10L)).isZero();
+    }
+
+    @Test
+    void getTotalIncomeTreatsRestClientFailureAsEmptyList() {
+        restTemplate.throwException = true;
+
+        assertThat(analyticsController.getTotalIncome(10L)).isZero();
+    }
+
+    @Test
+    void getTotalExpenseIgnoresMissingAndInvalidAmounts() {
+        restTemplate.response = List.of(
+                Map.of("title", "No amount"),
+                Map.of("amount", "not-a-number"),
+                Map.of("amount", 75.25)
+        );
+
+        assertThat(analyticsController.getTotalExpense(10L)).isEqualTo(75.25);
+    }
+
     private static class StubRestTemplate extends RestTemplate {
         private Object response;
         private Map<String, Object> responses = Map.of();
         private String url;
+        private boolean throwException;
 
         @Override
         public <T> T getForObject(String url, Class<T> responseType, Object... uriVariables) {
             this.url = url;
+            if (throwException) {
+                throw new RestClientException("Service unavailable");
+            }
             Object resolved = responses.getOrDefault(url, response);
             return responseType.cast(resolved);
         }
