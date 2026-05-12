@@ -40,7 +40,7 @@ spring:
 app:
   messaging:
     notification:
-      async-enabled: true
+      async-enabled: false
       exchange: spendsmart.notification.exchange
       queues:
         send: spendsmart.notification.send

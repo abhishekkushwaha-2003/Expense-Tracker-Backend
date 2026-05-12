@@ -3,7 +3,9 @@ package com.spendsmart.analytics.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -19,13 +21,11 @@ public class AnalyticsController {
     public Double getTotalExpense(@PathVariable Long userId) {
 
         List<Map<String, Object>> expenses =
-                restTemplate.getForObject(
-                        "http://EXPENSE-SERVICE/expenses/user/" + userId,
-                        List.class);
+                fetchRecords("http://EXPENSE-SERVICE/expenses/user/" + userId);
 
         double total = 0;
         for (Map<String, Object> e : expenses) {
-            total += Double.parseDouble(e.get("amount").toString());
+            total += readAmount(e);
         }
 
         return total;
@@ -36,13 +36,11 @@ public class AnalyticsController {
     public Double getTotalIncome(@PathVariable Long userId) {
 
         List<Map<String, Object>> incomes =
-                restTemplate.getForObject(
-                        "http://INCOME-SERVICE/income/user/" + userId,
-                        List.class);
+                fetchRecords("http://INCOME-SERVICE/income/user/" + userId);
 
         double total = 0;
         for (Map<String, Object> i : incomes) {
-            total += Double.parseDouble(i.get("amount").toString());
+            total += readAmount(i);
         }
 
         return total;
@@ -60,5 +58,27 @@ public class AnalyticsController {
                 "totalExpense", expense,
                 "balance", income - expense
         );
+    }
+
+    private List<Map<String, Object>> fetchRecords(String url) {
+        try {
+            List<Map<String, Object>> records = restTemplate.getForObject(url, List.class);
+            return records == null ? Collections.emptyList() : records;
+        } catch (RestClientException ex) {
+            return Collections.emptyList();
+        }
+    }
+
+    private double readAmount(Map<String, Object> record) {
+        Object amount = record.get("amount");
+        if (amount == null) {
+            return 0;
+        }
+
+        try {
+            return Double.parseDouble(amount.toString());
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
     }
 }
