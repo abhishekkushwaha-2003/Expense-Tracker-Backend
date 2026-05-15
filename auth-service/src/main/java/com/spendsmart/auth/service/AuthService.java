@@ -1,6 +1,7 @@
 package com.spendsmart.auth.service;
 
 import com.spendsmart.auth.dto.UserPreferencesRequest;
+import com.spendsmart.auth.dto.AuthLoginResponse;
 import com.spendsmart.auth.entity.User;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public interface AuthService {
 
     void resetPassword(String email, String otp, String newPassword);
 
-    String login(String email, String password);
+    AuthLoginResponse login(String email, String password);
 
     User getUserById(Long userId);
 

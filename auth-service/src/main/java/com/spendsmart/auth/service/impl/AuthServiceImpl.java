@@ -1,5 +1,6 @@
 package com.spendsmart.auth.service.impl;
 
+import com.spendsmart.auth.dto.AuthLoginResponse;
 import com.spendsmart.auth.dto.UserPreferencesRequest;
 import com.spendsmart.auth.entity.User;
 import com.spendsmart.auth.messaging.NotificationPublisher;
@@ -110,7 +111,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String login(String email, String password) {
+    public AuthLoginResponse login(String email, String password) {
 
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
@@ -120,7 +121,8 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
 
-        User user = userRepository.findByEmail(email)
+        String normalizedEmail = email.trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (!"active".equalsIgnoreCase(user.getStatus())) {
@@ -131,7 +133,16 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid password");
         }
 
-        return jwtUtil.generateToken(user.getEmail());
+        return AuthLoginResponse.builder()
+                .token(jwtUtil.generateToken(user.getEmail()))
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .currency(user.getCurrency())
+                .timezone(user.getTimezone())
+                .monthlyBudget(user.getMonthlyBudget())
+                .status(user.getStatus())
+                .build();
     }
 
     @Override

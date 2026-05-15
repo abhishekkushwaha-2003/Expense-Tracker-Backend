@@ -1,0 +1,322 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: spendsmart-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - spendsmart-network
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: spendsmart-redis
+    ports:
+      - "${REDIS_HOST_PORT:-6380}:6379"
+    networks:
+      - spendsmart-network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: spendsmart-rabbitmq
+    ports:
+      - "${RABBITMQ_HOST_PORT:-5673}:5672"
+      - "${RABBITMQ_MANAGEMENT_HOST_PORT:-15673}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - spendsmart-network
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+    image: spendsmart/eureka-server:latest
+    container_name: spendsmart-eureka-server
+    ports:
+      - "${EUREKA_HOST_PORT:-8761}:8761"
+    environment:
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    networks:
+      - spendsmart-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    image: spendsmart/api-gateway:latest
+    container_name: spendsmart-api-gateway
+    ports:
+      - "${API_GATEWAY_HOST_PORT:-8080}:8080"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      - eureka-server
+    networks:
+      - spendsmart-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+    image: spendsmart/auth-service:latest
+    container_name: spendsmart-auth-service
+    ports:
+      - "${AUTH_SERVICE_HOST_PORT:-8081}:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_auth_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      APP_OTP_FROM_EMAIL: ${MAIL_FROM_EMAIL}
+      APP_MESSAGING_NOTIFICATION_ASYNC_ENABLED: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  expense-service:
+    build:
+      context: ./expense-service
+    image: spendsmart/expense-service:latest
+    container_name: spendsmart-expense-service
+    ports:
+      - "${EXPENSE_SERVICE_HOST_PORT:-8082}:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_expense_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  income-service:
+    build:
+      context: ./income-service
+    image: spendsmart/income-service:latest
+    container_name: spendsmart-income-service
+    ports:
+      - "${INCOME_SERVICE_HOST_PORT:-8083}:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_income_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  category-service:
+    build:
+      context: ./category-service
+    image: spendsmart/category-service:latest
+    container_name: spendsmart-category-service
+    ports:
+      - "${CATEGORY_SERVICE_HOST_PORT:-8084}:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_category_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  budget-service:
+    build:
+      context: ./budget-service
+    image: spendsmart/budget-service:latest
+    container_name: spendsmart-budget-service
+    ports:
+      - "${BUDGET_SERVICE_HOST_PORT:-8085}:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_budget_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      APP_MESSAGING_NOTIFICATION_ASYNC_ENABLED: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  analytics-service:
+    build:
+      context: ./analytics-service
+    image: spendsmart/analytics-service:latest
+    container_name: spendsmart-analytics-service
+    ports:
+      - "${ANALYTICS_SERVICE_HOST_PORT:-8086}:8086"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      - eureka-server
+    networks:
+      - spendsmart-network
+
+  recurring-service:
+    build:
+      context: ./recurring-service
+    image: spendsmart/recurring-service:latest
+    container_name: spendsmart-recurring-service
+    ports:
+      - "${RECURRING_SERVICE_HOST_PORT:-8087}:8087"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_recurring_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      APP_MESSAGING_NOTIFICATION_ASYNC_ENABLED: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  notification-service:
+    build:
+      context: ./notification-service
+    image: spendsmart/notification-service:latest
+    container_name: spendsmart-notification-service
+    ports:
+      - "${NOTIFICATION_SERVICE_HOST_PORT:-8088}:8088"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_notification_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED: "true"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  payment-service:
+    build:
+      context: ./payment-service
+    image: spendsmart/payment-service:latest
+    container_name: spendsmart-payment-service
+    ports:
+      - "${PAYMENT_SERVICE_HOST_PORT:-8090}:8090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/spendsmart_payment_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+  admin-service:
+    build:
+      context: ./admin-service
+    image: spendsmart/admin-service:latest
+    container_name: spendsmart-admin-service
+    ports:
+      - "${ADMIN_SERVICE_HOST_PORT:-8091}:8091"
+    environment:
+      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      APP_ADMIN_EMAIL: ${ADMIN_EMAIL}
+      APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      APP_ADMIN_FULL_NAME: ${ADMIN_FULL_NAME}
+      SERVICES_AUTH_BASE_URL: http://api-gateway:8080/auth
+      SERVICES_EXPENSE_BASE_URL: http://api-gateway:8080/expenses
+      SERVICES_INCOME_BASE_URL: http://api-gateway:8080/income
+      SERVICES_CATEGORY_BASE_URL: http://api-gateway:8080/categories
+      SERVICES_NOTIFICATION_BASE_URL: http://api-gateway:8080/notifications
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      api-gateway:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - spendsmart-network
+
+networks:
+  spendsmart-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

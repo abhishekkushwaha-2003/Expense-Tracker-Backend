@@ -1,6 +1,7 @@
 package com.spendsmart.auth.controller;
 
 import com.spendsmart.auth.dto.AuthLoginRequest;
+import com.spendsmart.auth.dto.AuthLoginResponse;
 import com.spendsmart.auth.dto.AuthRegisterRequest;
 import com.spendsmart.auth.dto.UserPreferencesRequest;
 import com.spendsmart.auth.dto.ResetPasswordRequest;
@@ -58,7 +59,7 @@ public class AuthController {
 
     // Login API
     @PostMapping("/login")
-    public String login(@Valid @RequestBody AuthLoginRequest request) {
+    public AuthLoginResponse login(@Valid @RequestBody AuthLoginRequest request) {
         return authService.login(request.getEmail(), request.getPassword());
     }
 
@@ -89,6 +90,11 @@ public class AuthController {
 
     @PutMapping("/users/{userId}/preferences")
     public User updatePreferences(@PathVariable Long userId, @RequestBody UserPreferencesRequest request) {
+        return authService.updatePreferences(userId, request);
+    }
+
+    @PutMapping("/internal/users/{userId}/preferences")
+    public User updateInternalPreferences(@PathVariable Long userId, @RequestBody UserPreferencesRequest request) {
         return authService.updatePreferences(userId, request);
     }
 }

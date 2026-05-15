@@ -4,6 +4,7 @@ import com.spendsmart.recurring.entity.Recurring;
 import com.spendsmart.recurring.repository.RecurringRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -57,7 +58,7 @@ public class RecurringController {
     public List<Recurring> getByUser(@PathVariable Long userId) {
         return repository.findAll()
                 .stream()
-                .filter(recurring -> recurring.getUserId().equals(userId))
+                .filter(recurring -> Objects.equals(recurring.getUserId(), userId))
                 .toList();
     }
 
