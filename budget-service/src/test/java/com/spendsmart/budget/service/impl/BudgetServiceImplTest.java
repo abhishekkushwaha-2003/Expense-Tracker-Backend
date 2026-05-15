@@ -74,7 +74,7 @@ class BudgetServiceImplTest {
 
         assertThat(result.getLimitAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000.0));
         verify(restTemplate).put(
-                eq("http://AUTH-SERVICE/auth/users/{userId}/preferences"),
+                eq("http://AUTH-SERVICE/auth/internal/users/{userId}/preferences"),
                 any(Map.class),
                 eq(10L)
         );

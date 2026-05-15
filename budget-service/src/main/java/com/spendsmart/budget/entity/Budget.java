@@ -82,7 +82,7 @@ public class Budget {
 
     private void applyDefaults() {
         if (this.alertThreshold == null) {
-            this.alertThreshold = 75;
+            this.alertThreshold = 50;
         }
         if (this.categoryId == null) {
             this.categoryId = 0;

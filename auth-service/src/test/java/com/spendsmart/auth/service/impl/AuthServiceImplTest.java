@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.spendsmart.auth.dto.UserPreferencesRequest;
+import com.spendsmart.auth.dto.AuthLoginResponse;
 import com.spendsmart.auth.entity.User;
 import com.spendsmart.auth.messaging.NotificationPublisher;
 import com.spendsmart.auth.repository.UserRepository;
@@ -154,10 +155,12 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret", "encoded")).thenReturn(true);
 
-        String token = service.login("user@example.com", "secret");
+        AuthLoginResponse response = service.login(" USER@example.com ", "secret");
 
-        assertTrue(jwtUtil.validateToken(token));
-        assertEquals("user@example.com", jwtUtil.extractEmail(token));
+        assertEquals(5L, response.getUserId());
+        assertEquals("user@example.com", response.getEmail());
+        assertTrue(jwtUtil.validateToken(response.getToken()));
+        assertEquals("user@example.com", jwtUtil.extractEmail(response.getToken()));
     }
 
     @Test

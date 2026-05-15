@@ -71,7 +71,7 @@ class BudgetServiceApplicationTests {
         assertEquals(10L, saved.getBudgetId());
         assertEquals(1800.0, saved.getMonthlyLimit());
         assertEquals(BigDecimal.valueOf(1800.0), saved.getLimitAmount());
-        verify(restTemplate).put("http://AUTH-SERVICE/auth/users/{userId}/preferences", Map.of("monthlyBudget", 1800.0), 5L);
+        verify(restTemplate).put("http://AUTH-SERVICE/auth/internal/users/{userId}/preferences", Map.of("monthlyBudget", 1800.0), 5L);
     }
 
     @Test
