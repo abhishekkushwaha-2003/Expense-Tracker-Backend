@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -223,7 +224,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findByProviderOrderId(request.razorpayOrderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment order not found"));
 
-        if (!payment.getUserId().equals(request.userId())) {
+        if (!Objects.equals(payment.getUserId(), request.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Payment does not belong to this user");
         }
 

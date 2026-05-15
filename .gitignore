@@ -1,4 +1,5 @@
 # --- Build Artifacts ---
+.sonarlint/
 target/
 build/
 out/

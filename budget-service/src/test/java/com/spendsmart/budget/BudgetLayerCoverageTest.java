@@ -50,7 +50,7 @@ class BudgetLayerCoverageTest {
         assertNotNull(budget.getCreatedAt());
         assertTrue(budget.getIsActive());
         assertEquals(0.0, budget.getSpentAmount());
-        assertEquals(75, budget.getAlertThreshold());
+        assertEquals(50, budget.getAlertThreshold());
         assertEquals(0, budget.getCategoryId());
         assertEquals(BigDecimal.valueOf(1200.0), budget.getLimitAmount());
         assertEquals("Monthly Budget", budget.getName());

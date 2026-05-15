@@ -128,7 +128,7 @@ public class BudgetServiceImpl implements BudgetService {
         }
 
         double spentAmount = budget.getSpentAmount() == null ? 0.0 : budget.getSpentAmount();
-        double alertThreshold = budget.getAlertThreshold() == null ? 75.0 : budget.getAlertThreshold();
+        double alertThreshold = budget.getAlertThreshold() == null ? 50.0 : budget.getAlertThreshold();
         double usagePercent = (spentAmount / monthlyLimit) * 100.0;
         boolean thresholdReached = usagePercent >= alertThreshold && spentAmount < monthlyLimit;
         boolean limitReached = spentAmount >= monthlyLimit;
@@ -232,7 +232,7 @@ public class BudgetServiceImpl implements BudgetService {
             Map<String, Object> request = new LinkedHashMap<>();
             request.put("monthlyBudget", budget.getMonthlyLimit());
             restTemplate.put(
-                    "http://AUTH-SERVICE/auth/users/{userId}/preferences",
+                    "http://AUTH-SERVICE/auth/internal/users/{userId}/preferences",
                     request,
                     budget.getUserId()
             );

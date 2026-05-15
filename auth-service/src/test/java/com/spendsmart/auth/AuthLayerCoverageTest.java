@@ -31,6 +31,15 @@ import static org.mockito.Mockito.*;
 class AuthLayerCoverageTest {
 
     @Test
+    void jwtUtilGeneratesAndValidatesToken() {
+        JwtUtil jwtUtil = new JwtUtil();
+        String token = jwtUtil.generateToken("user@test.com");
+        assertEquals("user@test.com", jwtUtil.extractEmail(token));
+        assertTrue(jwtUtil.validateToken(token));
+        assertFalse(jwtUtil.validateToken("invalid-token"));
+    }
+
+    @Test
     void controllerDelegatesToService() {
         AuthService service = mock(AuthService.class);
         AuthController controller = new AuthController();
@@ -54,7 +63,8 @@ class AuthLayerCoverageTest {
         reset.setNewPassword("new");
         UserPreferencesRequest prefs = new UserPreferencesRequest();
         when(service.register(any(User.class))).thenReturn(user);
-        when(service.login("user@test.com", "p")).thenReturn("token");
+        AuthLoginResponse loginResponse = AuthLoginResponse.builder().token("token").userId(1L).email("user@test.com").build();
+        when(service.login("user@test.com", "p")).thenReturn(loginResponse);
         when(service.getUserById(1L)).thenReturn(user);
         when(service.getAllUsers()).thenReturn(List.of(user));
         when(service.updateUserStatus(1L, true)).thenReturn(user);
@@ -66,7 +76,7 @@ class AuthLayerCoverageTest {
         assertEquals("Password reset OTP sent successfully", controller.sendPasswordResetOtp(sendOtp));
         assertEquals("OTP verified successfully", controller.verifyPasswordResetOtp(verifyOtp));
         assertEquals("Password reset successfully", controller.resetPassword(reset));
-        assertEquals("token", controller.login(login));
+        assertSame(loginResponse, controller.login(login));
         assertSame(user, controller.getUser(1L));
         assertSame(user, controller.getInternalUser(1L));
         assertEquals(List.of(user), controller.getAllInternalUsers());
